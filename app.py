@@ -3,7 +3,7 @@ from pypdf import PdfReader
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
-import ollama
+from groq import Groq
 
 # Page configuration
 st.set_page_config(
@@ -68,7 +68,7 @@ with st.sidebar:
     st.write("2. Streamlit")
     st.write("3. FAISS")
     st.write("4. Sentence Transformers")
-    st.write("5. Ollama - Llama 3.2")
+    st.write("5.Groq API -Llama")
     st.divider()
     st.info("Upload a PDF and ask questions based on its content.")
 
@@ -137,23 +137,26 @@ if uploaded_file:
 
             context = "\n".join(retrieved_chunks)
 
-            response = ollama.chat(
-                model="llama3.2",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "Answer only using the provided PDF context. Do not invent information. If the answer is not present, clearly say that you cannot find it in the document."
-                    },
-                    {
-                        "role": "user",
-                        "content": f"PDF Context:\n{context}\n\nQuestion: {question}"
-                    }
-                ]
-            )
+            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+response = client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {
+            "role": "system",
+            "content": "Answer only using the provided PDF context. Do not invent information. If the answer is not present, clearly say that you cannot find it in the document."
+        },
+        {
+            "role": "user",
+            "content": f"PDF Context:\n{context}\n\nQuestion: {question}"
+        }
+    ],
+    temperature=0.2
+)
 
         # Display answer
         st.subheader("Answer")
-        st.write(response["message"]["content"])
+        st.write(response.choices[0].message.content)
 
         # Display source and page numbers
         st.subheader("📚 Sources")
